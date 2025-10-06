@@ -1,4 +1,4 @@
-use image::{ImageFormat, ImageResult, Rgb, RgbImage, imageops::FilterType::Triangle};
+use image::{GenericImage, GenericImageView, ImageFormat, ImageResult, Rgb, RgbImage, Rgba, imageops::FilterType::Triangle};
 use std::env;
 
 struct TImage {
@@ -29,7 +29,19 @@ impl TImage {
             *pixel = Rgb([255, 255, 255]);
         }
 
-        let input_image_file = image::open(&self.input_image_path)?;
+        let mut input_image_file = image::open(&self.input_image_path)?;
+        
+        let (i_width, i_height)  = input_image_file.dimensions();
+        for x in 0..i_width {
+            for y in 0..i_height {
+                let pixel = input_image_file.get_pixel(x, y);
+                let [_r,_g,_b, a] = pixel.0;
+                if a == 0 {
+                    let _ = input_image_file.put_pixel(x.into(), y.into(), Rgba([255, 255, 255, 255]));
+                }
+            }
+        }
+
         let output_width: u32 = (width - self.padding).into();
         let output_height: u32 = (height - self.padding).into();
         let output_image_file = input_image_file.resize(output_width, output_height, Triangle);
