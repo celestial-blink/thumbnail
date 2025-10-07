@@ -1,22 +1,21 @@
-use image::{GenericImage, GenericImageView, ImageFormat, ImageResult, Rgb, RgbImage, Rgba, imageops::FilterType::Triangle};
-use std::env;
+use image::{
+    GenericImage, GenericImageView, ImageFormat, ImageResult, Rgb, RgbImage, Rgba,
+    imageops::FilterType::Triangle, load_from_memory,
+};
+use std::{
+    env,
+    io::{self, Read},
+};
 
 struct TImage {
-    input_image_path: String,
     output_image_path: String,
     output_format: String,
     padding: u16,
 }
 
 impl TImage {
-    fn new(
-        input_image_path: String,
-        output_image_path: String,
-        output_format: String,
-        padding: u16,
-    ) -> Self {
+    fn new(output_image_path: String, output_format: String, padding: u16) -> Self {
         Self {
-            input_image_path,
             output_image_path,
             output_format,
             padding,
@@ -29,15 +28,19 @@ impl TImage {
             *pixel = Rgb([255, 255, 255]);
         }
 
-        let mut input_image_file = image::open(&self.input_image_path)?;
-        
-        let (i_width, i_height)  = input_image_file.dimensions();
+        let mut input_buffer_image_file = Vec::new();
+        let _ = io::stdin().read_to_end(&mut input_buffer_image_file);
+
+        let mut input_image_file = load_from_memory(&input_buffer_image_file)?;
+
+        let (i_width, i_height) = input_image_file.dimensions();
         for x in 0..i_width {
             for y in 0..i_height {
                 let pixel = input_image_file.get_pixel(x, y);
-                let [_r,_g,_b, a] = pixel.0;
+                let [_r, _g, _b, a] = pixel.0;
                 if a == 0 {
-                    let _ = input_image_file.put_pixel(x.into(), y.into(), Rgba([255, 255, 255, 255]));
+                    let _ =
+                        input_image_file.put_pixel(x.into(), y.into(), Rgba([255, 255, 255, 255]));
                 }
             }
         }
@@ -67,7 +70,6 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     // required 6 arguments
     /*
-    - input image path
     - output image path
     - format image "png|jpg"
     - padding number value
@@ -75,24 +77,14 @@ fn main() {
     - heigh image number value
      */
 
-    if let Ok(
-        [
-            _,
-            input_image_path,
-            output_image_path,
-            format,
-            padding,
-            width,
-            height,
-        ],
-    ) = <[String; 7]>::try_from(args)
+    if let Ok([_, output_image_path, format, padding, width, height]) =
+        <[String; 6]>::try_from(args)
     {
-        // let input_image_path = String::from("./logo.png");
         // let output_image_path = String::from("./test/takes.png");
         // let format = String::from("png");
         // let padding: u16 = 6;
         let padding: u16 = padding.parse().unwrap_or(6);
-        let t_image = TImage::new(input_image_path, output_image_path, format, padding);
+        let t_image = TImage::new(output_image_path, format, padding);
         let width: u16 = width.parse().unwrap_or(150);
         let height: u16 = height.parse().unwrap_or(150);
         let _ = t_image.resize(width, height);

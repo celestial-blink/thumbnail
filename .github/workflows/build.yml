@@ -1,0 +1,49 @@
+name: Build Binaries
+
+on:
+  push:
+    branches: [ main ]  # Cambia 'main' por tu rama principal si es diferente
+
+jobs:
+  build:
+    name: Build for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Instala Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Construye el binario
+      run: cargo build --release --target ${{ matrix.target }}
+
+    - name: Empaqueta el binario
+      shell: bash  # Necesario para Linux
+      run: |
+        cd target/${{ matrix.target }}/release
+        if [ "${{ matrix.archive }}" = "tar.gz" ]; then
+          tar -czf thumbnail-${{ matrix.target }}.tar.gz thumbnail
+          echo "asset=thumbnail-${{ matrix.target }}.tar.gz" >> $GITHUB_OUTPUT
+        else
+          7z a thumbnail-${{ matrix.target }}.zip thumbnail
+          echo "asset=thumbnail-${{ matrix.target }}.zip" >> $GITHUB_OUTPUT
+        fi
+      shell: bash  # Para Windows, usa PowerShell si es necesario, pero esto funciona
+
+    - name: Sube el binario como artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: thumbnail-${{ matrix.target }}
+        path: target/${{ matrix.target }}/release/*.${{ matrix.archive == 'tar.gz' && 'tar.gz' || 'zip' }}

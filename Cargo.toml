@@ -14,3 +14,7 @@ opt-level = "z"  # Optimiza para tamaño en lugar de velocidad
 lto = true       # Habilita Link-Time Optimization
 codegen-units = 1 # Reduce paralelismo para mejor optimización
 strip = true     # Elimina símbolos de depuración
+
+[[bin]]
+name = "thumbnail"
+path = "src/main.rs"
