@@ -4,19 +4,18 @@ use image::{
 };
 use std::{
     env,
-    io::{self, Read},
+    io::{self, Read, Write},
 };
 
 struct TImage {
-    output_image_path: String,
     output_format: String,
     padding: u16,
 }
 
 impl TImage {
-    fn new(output_image_path: String, output_format: String, padding: u16) -> Self {
+    fn new(output_format: String, padding: u16) -> Self {
         Self {
-            output_image_path,
+            // output_image_path,
             output_format,
             padding,
         }
@@ -30,6 +29,11 @@ impl TImage {
 
         let mut input_buffer_image_file = Vec::new();
         let _ = io::stdin().read_to_end(&mut input_buffer_image_file);
+
+        if input_buffer_image_file.is_empty() {
+            eprintln!("Error: No se recibieron datos en stdin.");
+            return Ok(());
+        }
 
         let mut input_image_file = load_from_memory(&input_buffer_image_file)?;
 
@@ -60,8 +64,15 @@ impl TImage {
             ImageFormat::Jpeg
         };
 
-        let _ = background_image.save_with_format(&self.output_image_path, image_format);
+        // let _ = background_image.save_with_format(&self.output_image_path, image_format);
+        let mut output_image = Vec::new();
 
+        let _ = background_image.write_to(
+            &mut io::Cursor::new(&mut output_image),
+            image_format);
+
+        let _ = io::stdout().write_all(&output_image)?;
+        
         Ok(())
     }
 }
@@ -70,26 +81,27 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     // required 6 arguments
     /*
-    - output image path
     - format image "png|jpg"
     - padding number value
     - width image number value
     - heigh image number value
      */
 
-    if let Ok([_, output_image_path, format, padding, width, height]) =
-        <[String; 6]>::try_from(args)
+    //< logo.png > ./test/marina_hes.jpg jpg 10 120 100
+
+    if let Ok([_, format, padding, width, height]) =
+        <[String; 5]>::try_from(args)
     {
         // let output_image_path = String::from("./test/takes.png");
         // let format = String::from("png");
         // let padding: u16 = 6;
         let padding: u16 = padding.parse().unwrap_or(6);
-        let t_image = TImage::new(output_image_path, format, padding);
+        let t_image = TImage::new(format, padding);
         let width: u16 = width.parse().unwrap_or(150);
         let height: u16 = height.parse().unwrap_or(150);
         let _ = t_image.resize(width, height);
-        println!("[ok]");
+        eprintln!("[ok]");
     } else {
-        println!("[error] Required 6 arguments");
+        eprintln!("[error] Required 6 arguments");
     }
 }
