@@ -29,18 +29,26 @@ jobs:
     - name: Construye el binario
       run: cargo build --release --target ${{ matrix.target }}
 
-    - name: Empaqueta el binario
-      shell: bash  # Necesario para Linux
+    - name: Empaqueta el binario (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         cd target/${{ matrix.target }}/release
-        if [ "${{ matrix.archive }}" = "tar.gz" ]; then
-          tar -czf thumbnail-${{ matrix.target }}.tar.gz thumbnail
-          echo "asset=thumbnail-${{ matrix.target }}.tar.gz" >> $GITHUB_OUTPUT
-        else
-          7z a thumbnail-${{ matrix.target }}.zip thumbnail
-          echo "asset=thumbnail-${{ matrix.target }}.zip" >> $GITHUB_OUTPUT
-        fi
-      shell: bash  # Para Windows, usa PowerShell si es necesario, pero esto funciona
+        tar -czf thumbnail-${{ matrix.target }}.tar.gz thumbnail
+        echo "asset=thumbnail-${{ matrix.target }}.tar.gz" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Instala 7zip (Windows)
+      if: matrix.os == 'windows-latest'
+      run: choco install 7zip
+      shell: pwsh
+
+    - name: Empaqueta el binario (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cd target/${{ matrix.target }}/release
+        7z a thumbnail-${{ matrix.target }}.zip thumbnail.exe
+        echo "asset=thumbnail-${{ matrix.target }}.zip" >> $GITHUB_OUTPUT
+      shell: pwsh
 
     - name: Sube el binario como artifact
       uses: actions/upload-artifact@v4
